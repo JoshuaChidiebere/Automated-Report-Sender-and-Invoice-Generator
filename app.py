@@ -1,4 +1,5 @@
 import os
+import smtplib
 from datetime import datetime
 from pathlib import Path
 
@@ -35,9 +36,6 @@ def create_pdf() -> InvoicePDF:
 
 
 def safe_cell(pdf: FPDF, w: float, h: float, text: str = "", **kwargs):
-    """
-    Write text safely with built-in fonts by replacing unsupported Unicode symbols.
-    """
     clean_text = str(text).replace("₦", "NGN ")
     pdf.cell(w, h, clean_text, **kwargs)
 
@@ -50,7 +48,10 @@ st.markdown("**Portfolio Project 6** — Generate invoices, reports, and send th
 tab1, tab2 = st.tabs(["🧾 Invoice Generator", "📊 Report Sender"])
 
 
-# INVOICE GENERATOR
+if "report_path" not in st.session_state:
+    st.session_state.report_path = None
+
+
 with tab1:
     st.subheader("Create Professional Invoice")
 
@@ -140,7 +141,6 @@ with tab1:
             st.error(f"Invoice generation failed: {e}")
 
 
-# REPORT SENDER
 with tab2:
     st.subheader("Generate & Email Report")
 
@@ -174,13 +174,16 @@ with tab2:
 
             st.write(f"**Total Revenue: {format_naira(total_revenue)}**")
 
-            st.subheader("Send via Email")
-            sender_email = st.text_input("Your Gmail Address")
-            app_password = st.text_input("Gmail App Password (not regular password)", type="password")
-            recipient = st.text_input("Recipient Email")
+            st.subheader("Email Settings")
+            recipient = st.text_input("Recipient Email", key="recipient_email")
+            st.caption("Sender email and app password are loaded from Streamlit secrets.")
 
-            if "report_path" not in st.session_state:
-                st.session_state.report_path = None
+            with st.expander("How to set Streamlit secrets"):
+                st.code(
+                    'EMAIL_ADDRESS = "yourgmail@gmail.com"\n'
+                    'EMAIL_APP_PASSWORD = "your16characterapppassword"',
+                    language="toml",
+                )
 
             if st.button("Generate Summary Report PDF"):
                 try:
@@ -220,34 +223,55 @@ with tab2:
                         )
 
                     OUTPUT_DIR.mkdir(exist_ok=True)
-                    report_path = OUTPUT_DIR / f"report_{datetime.now().strftime('%Y%m%d')}.pdf"
+                    report_path = OUTPUT_DIR / f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
                     pdf.output(str(report_path))
-                    st.session_state.report_path = str(report_path)
-                    st.success("Report PDF generated!")
 
-                    if st.session_state.report_path:
-                        st.info(f"Current report ready: {st.session_state.report_path}")
-                        if st.button("Send Email with Attachment"):
-                            if not sender_email or not app_password or not recipient:
-                                st.error("Please fill in sender email, app password, and recipient email.")
-                            else:
-                                try:
-                                    yag = yagmail.SMTP(sender_email, app_password)
-                                    subject = f"Sales Report - {datetime.now().strftime('%Y-%m-%d')}"
-                                    body = "Please find the attached automated report."
-                                    yag.send(
-                                        to=recipient,
-                                        subject=subject,
-                                        contents=body,
-                                        attachments=str(report_path),
-                                    )
-                                    st.success(f"✅ Email sent successfully to {recipient}!")
-                                except Exception as e:
-                                    st.error(
-                                        f"Email failed: {str(e)}. Make sure you use a Gmail App Password."
-                                    )
+                    st.session_state.report_path = str(report_path)
+                    st.success("Report PDF generated successfully!")
+
                 except Exception as e:
                     st.error(f"Report PDF generation failed: {e}")
+
+            if st.session_state.report_path:
+                st.info(f"Report ready: {st.session_state.report_path}")
+
+                if st.button("Send Email with Attachment"):
+                    try:
+                        sender_email = st.secrets["EMAIL_ADDRESS"]
+                        app_password = st.secrets["EMAIL_APP_PASSWORD"]
+
+                        if not recipient:
+                            st.error("Please enter a recipient email.")
+                        elif not os.path.exists(st.session_state.report_path):
+                            st.error("Attachment file was not found. Generate the report again.")
+                        else:
+                            with st.expander("Debug info"):
+                                st.write("Sender:", sender_email)
+                                st.write("Recipient:", recipient)
+                                st.write("Attachment path:", st.session_state.report_path)
+                                st.write("Attachment exists:", os.path.exists(st.session_state.report_path))
+
+                            yag = yagmail.SMTP(user=sender_email, password=app_password)
+                            subject = f"Sales Report - {datetime.now().strftime('%Y-%m-%d')}"
+                            body = "Please find the attached automated report."
+
+                            yag.send(
+                                to=recipient,
+                                subject=subject,
+                                contents=body,
+                                attachments=st.session_state.report_path,
+                            )
+
+                            st.success(f"✅ Email sent successfully to {recipient}")
+
+                    except KeyError:
+                        st.error("Missing EMAIL_ADDRESS or EMAIL_APP_PASSWORD in Streamlit secrets.")
+                    except smtplib.SMTPAuthenticationError as e:
+                        st.error(f"SMTP authentication failed: {e}")
+                    except smtplib.SMTPException as e:
+                        st.error(f"SMTP error: {e}")
+                    except Exception as e:
+                        st.error(f"Unexpected email error: {type(e).__name__}: {e}")
 
     else:
         st.info("Load data to generate report.")
