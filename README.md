@@ -23,6 +23,8 @@ https://automated-report-sender-and-invoice-generator-9dze32wf2mpwhdre.streamlit
 ## Screenshots
 <img width="1920" height="1080" alt="Screenshot (106)" src="https://github.com/user-attachments/assets/a5a8d212-b441-47d9-a31d-4511cce346e7" />
 <img width="1920" height="1080" alt="Screenshot (107)" src="https://github.com/user-attachments/assets/1209ae29-c663-492a-9941-59d1f3bbaf00" />
+<img width="1920" height="1080" alt="Screenshot (110)" src="https://github.com/user-attachments/assets/99040873-ff87-40b9-9c49-1b5ecb7dec80" />
+<img width="1920" height="1080" alt="Screenshot (109)" src="https://github.com/user-attachments/assets/8b11aca1-5f57-439b-bedd-fead37cb5f9e" />
 
 ## Extensions
 - Connect to Google Sheets with gspread for live data
