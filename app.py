@@ -174,6 +174,14 @@ with tab2:
 
             st.write(f"**Total Revenue: {format_naira(total_revenue)}**")
 
+            st.subheader("Send via Email")
+            sender_email = st.text_input("Your Gmail Address")
+            app_password = st.text_input("Gmail App Password (not regular password)", type="password")
+            recipient = st.text_input("Recipient Email")
+
+            if "report_path" not in st.session_state:
+                st.session_state.report_path = None
+
             if st.button("Generate Summary Report PDF"):
                 try:
                     pdf = create_pdf()
@@ -214,33 +222,30 @@ with tab2:
                     OUTPUT_DIR.mkdir(exist_ok=True)
                     report_path = OUTPUT_DIR / f"report_{datetime.now().strftime('%Y%m%d')}.pdf"
                     pdf.output(str(report_path))
+                    st.session_state.report_path = str(report_path)
                     st.success("Report PDF generated!")
 
-                    st.subheader("Send via Email")
-                    sender_email = st.text_input("Your Gmail Address")
-                    app_password = st.text_input("Gmail App Password (not regular password)", type="password")
-                    recipient = st.text_input("Recipient Email")
-
-                    if st.button("Send Email with Attachment"):
-                        if not sender_email or not app_password or not recipient:
-                            st.error("Please fill in sender email, app password, and recipient email.")
-                        else:
-                            try:
-                                yag = yagmail.SMTP(sender_email, app_password)
-                                subject = f"Sales Report - {datetime.now().strftime('%Y-%m-%d')}"
-                                body = "Please find the attached automated report."
-                                yag.send(
-                                    to=recipient,
-                                    subject=subject,
-                                    contents=body,
-                                    attachments=str(report_path),
-                                )
-                                st.success(f"✅ Email sent successfully to {recipient}!")
-                            except Exception as e:
-                                st.error(
-                                    f"Email failed: {str(e)}. Make sure you use a Gmail App Password."
-                                )
-
+                    if st.session_state.report_path:
+                        st.info(f"Current report ready: {st.session_state.report_path}")
+                        if st.button("Send Email with Attachment"):
+                            if not sender_email or not app_password or not recipient:
+                                st.error("Please fill in sender email, app password, and recipient email.")
+                            else:
+                                try:
+                                    yag = yagmail.SMTP(sender_email, app_password)
+                                    subject = f"Sales Report - {datetime.now().strftime('%Y-%m-%d')}"
+                                    body = "Please find the attached automated report."
+                                    yag.send(
+                                        to=recipient,
+                                        subject=subject,
+                                        contents=body,
+                                        attachments=str(report_path),
+                                    )
+                                    st.success(f"✅ Email sent successfully to {recipient}!")
+                                except Exception as e:
+                                    st.error(
+                                        f"Email failed: {str(e)}. Make sure you use a Gmail App Password."
+                                    )
                 except Exception as e:
                     st.error(f"Report PDF generation failed: {e}")
 
