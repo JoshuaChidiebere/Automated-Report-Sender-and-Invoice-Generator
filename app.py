@@ -178,12 +178,12 @@ with tab2:
             recipient = st.text_input("Recipient Email", key="recipient_email")
             st.caption("Sender email and app password are loaded from Streamlit secrets.")
 
-            with st.expander("How to set Streamlit secrets"):
-                st.code(
-                    'EMAIL_ADDRESS = "yourgmail@gmail.com"\n'
-                    'EMAIL_APP_PASSWORD = "your16characterapppassword"',
-                    language="toml",
-                )
+            # with st.expander("How to set Streamlit secrets"):
+            #     st.code(
+            #         'EMAIL_ADDRESS = "yourgmail@gmail.com"\n'
+            #         'EMAIL_APP_PASSWORD = "your16characterapppassword"',
+            #         language="toml",
+            #     )
 
             if st.button("Generate Summary Report PDF"):
                 try:
